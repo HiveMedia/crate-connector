@@ -1,5 +1,6 @@
 .idea/
 target/
+project/
 *.lock
 *.swp
 .DS_Store
