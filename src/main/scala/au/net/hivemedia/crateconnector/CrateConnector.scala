@@ -1,11 +1,16 @@
 package au.net.hivemedia.crateconnector
 
 import java.io.IOException
-
 import io.crate.client.CrateClient
 
 /**
- * Created by Liam on 20/07/15.
+ * CrateConnector provides methods
+ * to make the creation and deletion of,
+ * and retreival of data from tables
+ * based on case classes as easy as possible
+ *
+ * @author Liam Haworth
+ * @version 1.0
  */
 object CrateConnector {
 
@@ -18,7 +23,7 @@ object CrateConnector {
    * @return Boolean Returns true if a new table was created
    */
   @throws(classOf[IOException])
-  def create(schema: String, objClass: Class[_ <: CrateObject])(implicit crateClient: CrateClient): Boolean = {
+  def create(schema: String, objClass: Class[_ <: CrateObject], primaryKey: String = "")(implicit crateClient: CrateClient): Boolean = {
     if(crateClient == null)
       throw new IOException("Requires implicit object crateClient to be initialized")
 
@@ -27,10 +32,9 @@ object CrateConnector {
 
     val tableName = objClass.getSimpleName.toLowerCase
     var tableColumns = Map.empty[String, String]
-    val primaryKey = objClass.newInstance().primaryKey
 
     objClass.getDeclaredFields.foreach { f =>
-      if(!f.getName.equals("primaryKey"))
+      if(!f.getName.startsWith("$"))
         f.getType match {
           case t if t == classOf[String]      => tableColumns += f.getName -> "string"
           case t if t == classOf[Int]         => tableColumns += f.getName -> "integer"
@@ -55,10 +59,12 @@ object CrateConnector {
       firstItem = false
     }
 
+    sqlStatement += ")"
+
+    println(sqlStatement)
 
     try {
-      crateClient.sql(sqlStatement)
-      Thread.sleep(1000) // Have to wait for Crate to accept the request and build the table
+      crateClient.sql(sqlStatement).get
       exists(schema, objClass)(crateClient)
     }
     catch {
@@ -100,11 +106,19 @@ object CrateConnector {
       throw new IOException(s"Table for $schema.${objClass.getSimpleName.toLowerCase} does not exist yet!")
 
     try {
-      val sqlResult = crateClient.sql(s"select * from $schema.${objClass.getSimpleName.toLowerCase} $conditional").get()
+      var selectors = List.empty[String]
+
+      objClass.getDeclaredFields.foreach { field =>
+        if(!field.getName.startsWith("$"))
+          selectors = selectors :+ field.getName
+      }
+
+      val sqlResult = crateClient.sql(s"select ${selectors.mkString(", ")} from $schema.${objClass.getSimpleName.toLowerCase} $conditional").get()
       var selectResult = List.empty[T]
 
-      for(args <- sqlResult.rows())
+      sqlResult.rows.foreach { args =>
         selectResult = selectResult :+ objClass.getConstructors()(0).newInstance(args: _*).asInstanceOf[T]
+      }
 
       selectResult
     }
@@ -131,8 +145,8 @@ object CrateConnector {
       return false
 
     try {
-      crateClient.sql(s"drop table $schema.${objClass.getSimpleName.toLowerCase}")
-      true
+      crateClient.sql(s"drop table $schema.${objClass.getSimpleName.toLowerCase}").get
+      !exists(schema, objClass)(crateClient)
     }
     catch {
       case ex: Exception =>

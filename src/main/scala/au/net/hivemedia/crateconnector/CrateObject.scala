@@ -15,7 +15,7 @@ import scala.pickling.json._
  * @author Liam Haworth
  * @version 1.0
  */
-case class CrateObject(primaryKey: String = null) {
+abstract class CrateObject {
 
   import CrateConnector._
 
@@ -25,18 +25,18 @@ case class CrateObject(primaryKey: String = null) {
    * @param obj Object to be converted to a value string
    * @return String
    */
-  private def convertToString(obj: AnyRef): String = {
-    obj.getClass match {
+  private def convertToString(obj: AnyRef, objType: Class[_]): String = {
+    objType match {
       case t if t == classOf[String]      => obj.asInstanceOf[String]
       case t if t == classOf[Int]         => obj.toString
       case t if t == classOf[Integer]     => obj.toString
-      case t if t == classOf[Boolean]     => if (obj.asInstanceOf[Boolean]) "0" else "1"
+      case t if t == classOf[Boolean]     => if (obj.asInstanceOf[Boolean]) "true" else "else"
       case t if t == classOf[Short]       => obj.toString
       case t if t == classOf[Double]      => obj.toString
       case t if t == classOf[Long]        => obj.toString
       case t if t == classOf[Float]       => obj.toString
       case t if t == classOf[Byte]        => obj.toString
-      case _                              => obj.pickle.value
+      case _                              => obj.pickle.value.replace("\n", "")
     }
   }
 
@@ -58,21 +58,21 @@ case class CrateObject(primaryKey: String = null) {
     var insertData = Map.empty[String, String]
 
     this.getClass.getDeclaredFields.foreach { f =>
-      f.setAccessible(true)
-      insertData += f.getName -> s"'${convertToString(f.get(this))}'"
+      if(!f.getName.startsWith("$")) {
+        f.setAccessible(true)
+        insertData += f.getName -> s"'${convertToString(f.get(this), f.getType)}'"
+      }
     }
 
     val sqlStatement = s"insert into $schema.${this.getClass.getSimpleName.toLowerCase}(${insertData.keys.mkString(", ")}) values(${insertData.values.mkString(", ")})"
 
     try {
-      crateClient.sql(sqlStatement)
+      crateClient.sql(sqlStatement).get
     }
     catch {
       case ex: Exception =>
         throw new IOException(s"Failed to insert object into $schema.${this.getClass.getSimpleName.toLowerCase}", ex)
     }
   }
-
-
 }
 
