@@ -8,7 +8,7 @@ time by allowing the storage and retrieval of case classes in CrateDB
 Version
 -------
 
-`1.0.0`
+`1.0.0-SNAPSHOT`
 
 
 Usage
@@ -16,16 +16,15 @@ Usage
 
 First off, start by adding the library to your dependencies like so
 
-    libraryDependencies += "au.net.hivemedia" %% "crate-connector" % "1.0.0"
+    libraryDependencies += "au.net.hivemedia" %% "crate-connector" % "1.0.0-SNAPSHOT"
 
-Then on all classes that you would like to store in your database, just extend with `CrateObject`. CrateObject excepts
-one option parameter `primaryKey`, this defines which field in the case class should be used as a primary key.
+Then on all classes that you would like to store in your database, just extend with `CrateObject`.
 
-    case class User(id: Int, username: String, email: String, password: String) extends CrateObject("id")
+    case class User(id: Int, username: String, email: String, password: String) extends CrateObjec
 
 ### Creating Table from Object
 
-    CrateConnector.create("mydb", classOf[User])
+    CrateConnector.create("mydb", classOf[User], "id")
 
 ### Checking for Table Existence
 
@@ -45,7 +44,8 @@ one option parameter `primaryKey`, this defines which field in the case class sh
 
 ### Selecting Items
 
-    CrateConnector.select("mydb", classOf[User], "where id=1")
+    CrateConnector.select[User]("mydb", classOf[User], "where id=1")
+
 
 License and Authors
 -------------------
