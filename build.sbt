@@ -2,7 +2,7 @@ name := "crateconnector"
 
 organization := "au.net.hivemedia"
 
-version := "1.0.0-SNAPSHOT"
+version := "1.0.0"
 
 scalaVersion := "2.11.7"
 
@@ -12,10 +12,12 @@ libraryDependencies ++= Seq(
   "org.scalatest"                 %  "scalatest_2.11"                       % "2.2.4"           % "test"
 )
 
-publishTo ++= version { v: String =>
+publishMavenStyle := true
+
+publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT"))
+  if (isSnapshot.value)
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
