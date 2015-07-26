@@ -16,7 +16,7 @@ Usage
 
 First off, start by adding the library to your dependencies like so
 
-    libraryDependencies += "au.net.hivemedia" %% "crate-connector" % "1.0.0-SNAPSHOT"
+    libraryDependencies += "au.net.hivemedia" %% "crate-connector" % "1.0.0"
 
 Then on all classes that you would like to store in your database, just extend with `CrateObject`.
 
