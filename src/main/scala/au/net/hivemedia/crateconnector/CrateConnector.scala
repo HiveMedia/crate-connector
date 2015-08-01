@@ -159,6 +159,7 @@ object CrateConnector {
         wantedType match {
           case t if t == classOf[Map[String, _]]      => correctTypes = correctTypes :+ read[Map[String, _]](argList(i).asInstanceOf[String])
           case t if t == classOf[List[_]]             => correctTypes = correctTypes :+ read[List[_]](argList(i).asInstanceOf[String])
+          case t if t == classOf[Set[_]]              => correctTypes = correctTypes :+ read[Set[_]](argList(i).asInstanceOf[String])
 
           case _ =>
             throw new IOException(s"Unsupported type $wantedType")
