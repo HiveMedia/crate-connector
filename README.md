@@ -8,7 +8,7 @@ time by allowing the storage and retrieval of case classes in CrateDB
 Version
 -------
 
-`1.0.0`
+`1.1.0`
 
 
 Usage
