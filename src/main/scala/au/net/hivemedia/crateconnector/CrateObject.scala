@@ -76,5 +76,40 @@ abstract class CrateObject {
         throw new IOException(s"Failed to insert object into $schema.${this.getClass.getSimpleName.toLowerCase}", ex)
     }
   }
+
+  /**
+   * Updates a objects record on the database with the data provided by the parent object
+   *
+   * @param schema The schema the object is stored under
+   * @param conditional The conditional defining which records should be updated
+   * @param crateClient Crate client for connection to database
+   * @throws java.io.IOException Thrown when the records couldn't be updated
+   */
+  def update(schema: String, conditional: String = "")(implicit crateClient: CrateClient): Unit = {
+    if(crateClient == null)
+      throw new IOException("Requires implicit object crateClient to be initialized")
+
+    if(!exists(schema, this.getClass)(crateClient))
+      throw new IOException(s"Table for $schema.${this.getClass.getSimpleName.toLowerCase} does not exist yet!")
+
+    var updateData = Map.empty[String, String]
+
+    this.getClass.getDeclaredFields.foreach { f =>
+      if(!f.getName.startsWith("$")) {
+        f.setAccessible(true)
+        updateData += f.getName -> s"'${convertToString(f.get(this), f.getType)}'"
+      }
+    }
+
+    val sqlStatement = s"update $schema.${this.getClass.getSimpleName.toLowerCase} set ${updateData.mkString(", ").replace("->", "=")}"
+
+    try {
+      crateClient.sql(sqlStatement).get
+    }
+    catch {
+      case ex: Exception =>
+        throw new IOException(s"Failed to update records in $schema.${this.getClass.getSimpleName.toLowerCase}", ex)
+    }
+  }
 }
 
