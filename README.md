@@ -8,7 +8,7 @@ time by allowing the storage and retrieval of case classes in CrateDB
 Version
 -------
 
-`1.1.0`
+`1.2.0`
 
 
 Usage
@@ -16,11 +16,11 @@ Usage
 
 First off, start by adding the library to your dependencies like so
 
-    libraryDependencies += "au.net.hivemedia" %% "crateconnector" % "1.1.0"
+    libraryDependencies += "au.net.hivemedia" %% "crate-connector" % "1.2.0"
 
 Then on all classes that you would like to store in your database, just extend with `CrateObject`.
 
-    case class User(id: Int, username: String, email: String, password: String) extends CrateObjec
+    case class User(id: Int, username: String, email: String, password: String) extends CrateObject
 
 ### Creating Table from Object
 
@@ -41,6 +41,14 @@ Then on all classes that you would like to store in your database, just extend w
 
     // Call the insert method on the item
     newUser.insert("mydb")
+
+### Updating Records with Item
+
+   // Defines the updates
+   val updateUser = User(1, "testuser", "testuser@example.com", "HarderPassword123")
+
+   // Calls the update method to update the records
+   updateUser.update("mydb", "where id='1')
 
 ### Selecting Items
 

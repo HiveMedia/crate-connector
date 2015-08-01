@@ -32,6 +32,7 @@ class CrateConnectorSpec extends FlatSpec with Matchers {
 
   it should "expose helper methods on objects extending it" in {
     testObject.getClass.getSuperclass.getDeclaredMethods.map(_.getName) should contain ("insert")
+    testObject.getClass.getSuperclass.getDeclaredMethods.map(_.getName) should contain ("update")
   }
 
   "CreateConnector" should "throw an IOException when no CrateClient is defined" in {
@@ -75,6 +76,23 @@ class CrateConnectorSpec extends FlatSpec with Matchers {
     val objects = CrateConnector.select[TestObject]("testdb", classOf[TestObject])
 
     objects.size should be (1)
+  }
+
+  it should "update a record from an object and conditional" in {
+    implicit val crateClient = new CrateClient(crateDatabaseServer)
+
+    var objects = CrateConnector.select[TestObject]("testdb", classOf[TestObject])
+
+    objects(0).testInt should equal(Int.MaxValue)
+
+    val updatedObject = TestObject(Int.MinValue, "Testing123", true, Short.MaxValue, 9.87654321D, Long.MaxValue, 1.2345f, 0x32, List(1, "two", 0x03, 0.4f), Map("Test" -> "Map"), Set("1", 2, 0x3))
+
+    updatedObject.update("testdb", "where testString = 'Testing123'")
+    Thread.sleep(2500)
+
+    objects = CrateConnector.select[TestObject]("testdb", classOf[TestObject])
+
+    objects(0).testInt should equal(Int.MinValue)
   }
 
   it should "drop the table" in {
