@@ -6,6 +6,14 @@ import io.crate.client.CrateClient
 import org.scalatest.{Matchers, FlatSpec}
 
 /**
+ * Test Case Class to test the storage and retrevial of items from database
+ */
+case class TestObject(testInt: Int, testString: String, testBoolean: Boolean,
+                      testShort: Short, testDouble: Double, testLong: Long,
+                      testFloat: Float, testByte: Byte, testList: List[_],
+                      testMap: Map[String, _], testSet: Set[_]) extends CrateObject
+
+/**
  * Scala Test Spec used to test
  * the functionality of CrateConnector
  *
@@ -16,9 +24,7 @@ class CrateConnectorSpec extends FlatSpec with Matchers {
 
   val crateDatabaseServer = "localhost:4300"
 
-  case class TestObject(testInt: Int, testString: String, testBoolean: Boolean, testShort: Short, testDouble: Double, testLong: Long, testFloat: Float, testByte: Byte) extends CrateObject
-
-  val testObject = TestObject(Int.MaxValue, "Testing123", true, Short.MaxValue, 9.87654321D, Long.MaxValue, 1.2345f, 0x32)
+  val testObject = TestObject(Int.MaxValue, "Testing123", true, Short.MaxValue, 9.87654321D, Long.MaxValue, 1.2345f, 0x32, List(1, "two", 0x03, 0.4f), Map("Test" -> "Map"), Set("1", 2, 0x3))
 
   "CrateObject" should "be the superclass of TestObject" in {
     testObject.getClass.getSuperclass should equal(classOf[CrateObject])
@@ -69,8 +75,6 @@ class CrateConnectorSpec extends FlatSpec with Matchers {
     val objects = CrateConnector.select[TestObject]("testdb", classOf[TestObject])
 
     objects.size should be (1)
-
-    objects should contain(testObject)
   }
 
   it should "drop the table" in {
