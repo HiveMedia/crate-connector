@@ -87,7 +87,7 @@ class CrateConnectorSpec extends FlatSpec with Matchers {
 
     val updatedObject = TestObject(Int.MinValue, "Testing123", true, Short.MaxValue, 9.87654321D, Long.MaxValue, 1.2345f, 0x32, List(1, "two", 0x03, 0.4f), Map("Test" -> "Map"), Set("1", 2, 0x3))
 
-    updatedObject.update("testdb", "testString = 'Testing123'")
+    updatedObject.update("testdb", "where testString = 'Testing123'")
     Thread.sleep(2500)
 
     objects = CrateConnector.select[TestObject]("testdb", classOf[TestObject])

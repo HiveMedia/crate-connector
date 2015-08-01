@@ -101,7 +101,7 @@ abstract class CrateObject {
       }
     }
 
-    val sqlStatement = s"update $schema.${this.getClass.getSimpleName.toLowerCase} set ${updateData.mkString(", ").replace("->", "=")}"
+    val sqlStatement = s"update $schema.${this.getClass.getSimpleName.toLowerCase} set ${updateData.mkString(", ").replace("->", "=")} $conditional"
 
     try {
       crateClient.sql(sqlStatement).get
