@@ -1,12 +1,15 @@
 package au.net.hivemedia.crateconnector
 
 import java.io.IOException
+import org.json4s.NoTypeHints
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization.read
 import io.crate.client.CrateClient
 
 /**
  * CrateConnector provides methods
  * to make the creation and deletion of,
- * and retreival of data from tables
+ * and retrieval of data from tables
  * based on case classes as easy as possible
  *
  * @author Liam Haworth
@@ -55,13 +58,14 @@ object CrateConnector {
     var firstItem = true
 
     for((column, sqlType) <- tableColumns) {
-      sqlStatement += s"${if (!firstItem) ", " else ""}$column $sqlType ${if (column == primaryKey) "primary key" else ""}"
+      sqlStatement += s"${if (!firstItem) ", " else ""}$column $sqlType"
       firstItem = false
     }
 
-    sqlStatement += ")"
+    if(!primaryKey.equals(""))
+      sqlStatement += s", primary key ($primaryKey)"
 
-    println(sqlStatement)
+    sqlStatement += ")"
 
     try {
       crateClient.sql(sqlStatement).get
@@ -117,7 +121,7 @@ object CrateConnector {
       var selectResult = List.empty[T]
 
       sqlResult.rows.foreach { args =>
-        selectResult = selectResult :+ objClass.getConstructors()(0).newInstance(args: _*).asInstanceOf[T]
+        selectResult = selectResult :+ objClass.getConstructors()(0).newInstance(restoreTypes(objClass, args): _*).asInstanceOf[T]
       }
 
       selectResult
@@ -126,6 +130,45 @@ object CrateConnector {
       case ex: Exception =>
         throw new IOException(s"Failed to select objects from $schema.${objClass.getSimpleName.toLowerCase}", ex)
     }
+  }
+
+  /**
+   * Used by #restoreTypes to convert JSON strings to their orignal types
+   */
+  implicit val formats = Serialization.formats(NoTypeHints)
+
+  /**
+   * Restores values from their JSON form if that is how they had to be stored
+   *
+   * @param objClass The primary class being used to sort data
+   * @param argList The data from the database needing to be restored
+   * @throws java.io.IOException Thrown when an unsupported type is detected
+   * @return
+   */
+  @throws(classOf[IOException])
+  private def restoreTypes(objClass: Class[_ <: CrateObject], argList: Array[Object]): Array[_ <: Object] = {
+    var correctTypes = Array.empty[Object]
+    val fields = objClass.getDeclaredFields
+
+    for(i <- 0 until fields.length) {
+      val giveType = argList(i).getClass
+      val wantedType = fields(i).getType
+
+      if(giveType != wantedType && giveType == classOf[String])
+      {
+        wantedType match {
+          case t if t == classOf[Map[String, _]]      => correctTypes = correctTypes :+ read[Map[String, _]](argList(i).asInstanceOf[String])
+          case t if t == classOf[List[_]]             => correctTypes = correctTypes :+ read[List[_]](argList(i).asInstanceOf[String])
+
+          case _ =>
+            throw new IOException(s"Unsupported type $wantedType")
+        }
+      }
+      else
+        correctTypes = correctTypes :+ argList(i)
+    }
+
+    correctTypes
   }
 
   /**

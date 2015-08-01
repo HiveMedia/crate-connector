@@ -1,11 +1,10 @@
 package au.net.hivemedia.crateconnector
 
 import java.io.IOException
-
+import org.json4s.NoTypeHints
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization.write
 import io.crate.client.CrateClient
-
-import scala.pickling.Defaults._
-import scala.pickling.json._
 
 /**
  * CrateObject supplies methods
@@ -30,13 +29,16 @@ abstract class CrateObject {
       case t if t == classOf[String]      => obj.asInstanceOf[String]
       case t if t == classOf[Int]         => obj.toString
       case t if t == classOf[Integer]     => obj.toString
-      case t if t == classOf[Boolean]     => if (obj.asInstanceOf[Boolean]) "true" else "else"
+      case t if t == classOf[Boolean]     => if (obj.asInstanceOf[Boolean]) "true" else "false"
       case t if t == classOf[Short]       => obj.toString
       case t if t == classOf[Double]      => obj.toString
       case t if t == classOf[Long]        => obj.toString
       case t if t == classOf[Float]       => obj.toString
       case t if t == classOf[Byte]        => obj.toString
-      case _                              => obj.pickle.value.replace("\n", "")
+
+      case _                              =>
+        implicit val formats = Serialization.formats(NoTypeHints)
+        write(obj)(formats)
     }
   }
 
